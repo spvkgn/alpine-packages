@@ -11,7 +11,7 @@ builddir="$srcdir/UASM-$pkgver"
 makedepends="clang14 lld"
 
 build() {
-	make CC="/usr/bin/clang-14 -fcommon -static -std=gnu99 -Wno-error=int-conversion" -f gccLinux64.mak
+	make CC="/usr/bin/clang-14 -fcommon -std=gnu99 -Wno-error=int-conversion" -f gccLinux64.mak
 }
 
 package() {

@@ -3,19 +3,56 @@ name: build
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [chroot-alpine]
+    # branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    # steps:
+    #   - uses: actions/checkout@v4
+    #   - uses: spvkgn/abuild-releaser-action@dev
+    #     with:
+    #       author: Pavel <spvkgn@users.noreply.github.com>
+    #       rsa_public_key: ${{ secrets.RSA_PUBLIC_KEY }}
+    #       rsa_private_key: ${{ secrets.RSA_PRIVATE_KEY }}
+    #       alpine_branch: v3.19
+    name: build ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+          arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, s390x]
+          os: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: spvkgn/abuild-releaser-action@main
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Alpine Linux for ${{ matrix.arch }}
+        uses: jirutka/setup-alpine@v1
         with:
-          author: Pavel <spvkgn@users.noreply.github.com>
-          rsa_public_key: ${{ secrets.RSA_PUBLIC_KEY }}
-          rsa_private_key: ${{ secrets.RSA_PRIVATE_KEY }}
-          alpine_branch: v3.19
+          branch: v3.19
+          arch: ${{ matrix.arch }}
+          packages: |
+            alpine-sdk bash coreutils findutils wget
+          shell-name: alpine.sh
+
+      - name: Build packages inside chroot
+        env:
+          RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
+          RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
+        shell: alpine.sh --root {0}
+        run: |
+          bash build_packages.sh
+
+      - name: Deploy to GH Pages
+        if: false
+        uses: JamesIves/github-pages-deploy-action@releases/v4
+        with:
+          folder: ${{ github.workspace }}/packages
+          git-config-name: 'github-actions[bot]'
+          git-config-email: 'github-actions[bot]@users.noreply.github.com'
+          commit-message: 'Update packages'
+          single-commit: true
