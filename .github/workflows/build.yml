@@ -11,20 +11,12 @@ permissions:
 
 jobs:
   build:
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - uses: actions/checkout@v4
-    #   - uses: spvkgn/abuild-releaser-action@dev
-    #     with:
-    #       author: Pavel <spvkgn@users.noreply.github.com>
-    #       rsa_public_key: ${{ secrets.RSA_PUBLIC_KEY }}
-    #       rsa_private_key: ${{ secrets.RSA_PRIVATE_KEY }}
-    #       alpine_branch: v3.19
-    name: build ${{ matrix.arch }}
+    name: build ${{ matrix.branch }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-          arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, s390x]
+          arch: [x86_64, x86]
+          # arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, s390x]
           os: [ubuntu-latest]
           branch: [v3.19]
     steps:
@@ -42,26 +34,55 @@ jobs:
       - name: Setup Alpine Linux for ${{ matrix.arch }}
         uses: jirutka/setup-alpine@v1
         with:
-          branch: ${{ matrix.branch }}
           arch: ${{ matrix.arch }}
+          branch: ${{ matrix.branch }}
           packages: |
             alpine-sdk bash ccache coreutils findutils wget
           shell-name: alpine.sh
 
       - name: Build packages inside chroot
+        id: build
         env:
+          ARCH: ${{ matrix.arch }}
+          BRANCH: ${{ matrix.branch }}
           RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
           RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
         shell: alpine.sh --root {0}
         run: |
           bash build_packages.sh
 
-      - name: Deploy to GH Pages
-        if: false
-        uses: JamesIves/github-pages-deploy-action@releases/v4
+      - name: Upload artifacts
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v4
         with:
-          folder: ${{ github.workspace }}/packages
-          git-config-name: 'github-actions[bot]'
-          git-config-email: 'github-actions[bot]@users.noreply.github.com'
-          commit-message: 'Update packages'
-          single-commit: true
+          name: apk-${{ matrix.branch }}-${{ matrix.arch }}
+          path: ./**/apk-${{ matrix.branch }}-${{ matrix.arch }}.tar
+
+  gh-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: apk-*
+
+      - name: Merge artifacts
+        id: merge
+        env:
+          RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
+        run: |
+          mkdir -p public
+          echo "$RSA_PUBLIC_KEY" > ./public/$GITHUB_REPOSITORY_OWNER.rsa.pub
+          find . -name 'apk-*.tar' -exec tar xvf {} -C ./public \;
+
+      - name: Deploy to GH pages
+        id: deploy
+        if: steps.merge.outcome == 'success'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          full_commit_message: "Update packages"
+          force_orphan: true
