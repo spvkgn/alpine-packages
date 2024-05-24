@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    name: build ${{ matrix.branch }} ${{ matrix.arch }}
+    name: build ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -37,7 +37,7 @@ jobs:
           arch: ${{ matrix.arch }}
           branch: ${{ matrix.branch }}
           packages: |
-            alpine-sdk bash ccache coreutils findutils wget
+            alpine-sdk bash ccache coreutils findutils
           shell-name: alpine.sh
 
       - name: Build packages inside chroot
@@ -62,6 +62,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -75,11 +78,15 @@ jobs:
           mkdir -p public
           echo "$RSA_PUBLIC_KEY" > ./public/$GITHUB_REPOSITORY_OWNER.rsa.pub
           find . -name 'apk-*.tar' -exec tar xvf {} -C ./public \;
+          # Generate index.html
+          wget -cO- https://github.com/ivanvc/tpl/releases/download/0.3.0/tpl_Linux_$(uname -m).tar.gz | sudo tar -xzv -C /usr/local/bin tpl
+          command -v tpl
+          bash index.sh ./public
 
       - name: Deploy to GH pages
         id: deploy
         if: steps.merge.outcome == 'success'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           user_name: 'github-actions[bot]'

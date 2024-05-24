@@ -18,7 +18,6 @@ mkdir -p "$REPODEST"
 for dir in $GITHUB_WORKSPACE; do
   find "$dir" -type f -name APKBUILD -exec /bin/bash -c 'cd $(dirname {}); abuild -F checksum; abuild -F -r -D alpine' \;
 done
-cp "$HOME/$GITHUB_REPOSITORY_OWNER.rsa.pub" "$REPODEST"
 tar cvf apk-$BRANCH-$ARCH.tar --transform "s|^\./|alpine/$BRANCH/|" --show-transformed-names -C "$REPODEST"/*/ .
 
 ccache --max-size=50M --show-stats
