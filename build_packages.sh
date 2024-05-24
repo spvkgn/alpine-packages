@@ -4,6 +4,8 @@ set -euxo
 export PACKAGER="John Doe"
 export PACKAGER_PRIVKEY="$HOME/$GITHUB_REPOSITORY_OWNER.rsa"
 export REPODEST="$GITHUB_WORKSPACE/packages"
+export USE_CCACHE=1
+export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
 
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
@@ -17,3 +19,5 @@ for dir in $GITHUB_WORKSPACE; do
   find "$dir" -type f -name APKBUILD -exec /bin/bash -c 'cd $(dirname {}); abuild -F checksum; abuild -F -r' \;
 done
 cp "$HOME/$GITHUB_REPOSITORY_OWNER.rsa.pub" "$REPODEST"
+
+ccache --max-size=50M --show-stats

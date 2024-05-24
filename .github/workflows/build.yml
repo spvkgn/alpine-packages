@@ -26,17 +26,26 @@ jobs:
       matrix:
           arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, s390x]
           os: [ubuntu-latest]
+          branch: [v3.19]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-${{ matrix.branch }}-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.arch }}-
+
       - name: Setup Alpine Linux for ${{ matrix.arch }}
         uses: jirutka/setup-alpine@v1
         with:
-          branch: v3.19
+          branch: ${{ matrix.branch }}
           arch: ${{ matrix.arch }}
           packages: |
-            alpine-sdk bash coreutils findutils wget
+            alpine-sdk bash ccache coreutils findutils wget
           shell-name: alpine.sh
 
       - name: Build packages inside chroot

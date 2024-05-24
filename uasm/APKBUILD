@@ -8,10 +8,10 @@ license="custom"
 options="!check !spdx" # No tests available, license is the JWasm open source license
 source="https://github.com/Terraspace/UASM/archive/v$pkgver/uasm-$pkgver.tar.gz"
 builddir="$srcdir/UASM-$pkgver"
-makedepends="clang14 lld"
+makedepends="ccache clang14 lld"
 
 build() {
-	make CC="/usr/bin/clang-14 -fcommon -std=gnu99 -Wno-error=int-conversion" -f gccLinux64.mak
+	make CC="ccache /usr/bin/clang-14 -fcommon -std=gnu99 -Wno-error=int-conversion" -f gccLinux64.mak
 }
 
 package() {
