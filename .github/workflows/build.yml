@@ -3,8 +3,7 @@ name: build
 on:
   workflow_dispatch:
   push:
-    branches: [chroot-alpine]
-    # branches: [main]
+    branches: [main]
 
 permissions:
   contents: write
@@ -15,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-          arch: [x86_64, x86]
+          arch: [x86_64]
           # arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, s390x]
           os: [ubuntu-latest]
           branch: [v3.19]
@@ -29,7 +28,7 @@ jobs:
           path: ${{ github.workspace }}/.ccache
           key: ccache-${{ matrix.branch }}-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ matrix.arch }}-
+            ccache-${{ matrix.branch }}-${{ matrix.arch }}-
 
       - name: Setup Alpine Linux for ${{ matrix.arch }}
         uses: jirutka/setup-alpine@v1
@@ -37,7 +36,7 @@ jobs:
           arch: ${{ matrix.arch }}
           branch: ${{ matrix.branch }}
           packages: |
-            alpine-sdk bash ccache coreutils findutils
+            alpine-sdk bash ccache coreutils findutils gawk grep
           shell-name: alpine.sh
 
       - name: Build packages inside chroot
@@ -58,17 +57,17 @@ jobs:
           name: apk-${{ matrix.branch }}-${{ matrix.arch }}
           path: ./**/apk-${{ matrix.branch }}-${{ matrix.arch }}.tar
 
-  gh-pages:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        with:
-          pattern: apk-*
 
       - name: Merge artifacts
         id: merge
@@ -76,15 +75,21 @@ jobs:
           RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
         run: |
           mkdir -p public
-          echo "$RSA_PUBLIC_KEY" > ./public/$GITHUB_REPOSITORY_OWNER.rsa.pub
+          # copy existing packages from gh-pages branch
+          if git show-ref --quiet refs/remotes/origin/gh-pages; then
+            git checkout gh-pages
+            find . -mindepth 1 ! -name 'apk-*.tar' ! -name index.html ! -path '*/.*' ! -path './dist/*' -print0 | xargs -0 cp -v --preserve=all --parents -t ./public || true
+            git checkout main
+          fi
+          # add built packages
           find . -name 'apk-*.tar' -exec tar xvf {} -C ./public \;
+          echo "$RSA_PUBLIC_KEY" > ./public/$GITHUB_REPOSITORY_OWNER.rsa.pub
           # Generate index.html
           wget -cO- https://github.com/ivanvc/tpl/releases/download/0.3.0/tpl_Linux_$(uname -m).tar.gz | sudo tar -xzv -C /usr/local/bin tpl
-          command -v tpl
-          bash index.sh ./public
+          bash -x index.sh ./public
+          cp -va ./dist ./public
 
       - name: Deploy to GH pages
-        id: deploy
         if: steps.merge.outcome == 'success'
         uses: peaceiris/actions-gh-pages@v4
         with:

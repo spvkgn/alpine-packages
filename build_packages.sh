@@ -1,10 +1,9 @@
 #!/bin/bash
-set -euxo
+set -euo pipefail
 
 export PACKAGER="Pavel <spvkgn@users.noreply.github.com>"
 export PACKAGER_PRIVKEY="$HOME/$GITHUB_REPOSITORY_OWNER.rsa"
 export REPODEST="$GITHUB_WORKSPACE/packages"
-export USE_CCACHE=1
 export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
 
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
