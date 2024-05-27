@@ -69,28 +69,31 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
-      - name: Merge artifacts
-        id: merge
+      - name: Prepare files to publish
+        id: prepare
         env:
           RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
         run: |
           mkdir -p public
           # copy existing packages from gh-pages branch
           if git show-ref --quiet refs/remotes/origin/gh-pages; then
-            git checkout gh-pages
-            find . -mindepth 1 ! -name 'apk-*.tar' ! -name index.html ! -path '*/.*' ! -path './dist/*' -print0 | xargs -0 cp -v --preserve=all --parents -t ./public || true
-            git checkout main
+            git checkout --progress gh-pages
+            find . -mindepth 1 ! -name 'apk-*.tar' ! -name index.html ! -path '*/.*' -print0 | xargs -0 cp -v --preserve=all --parents -t ./public || true
+            git checkout --progress main
           fi
           # add built packages
           find . -name 'apk-*.tar' -exec tar xvf {} -C ./public \;
           echo "$RSA_PUBLIC_KEY" > ./public/$GITHUB_REPOSITORY_OWNER.rsa.pub
-          # Generate index.html
-          wget -cO- https://github.com/ivanvc/tpl/releases/download/0.3.0/tpl_Linux_$(uname -m).tar.gz | sudo tar -xzv -C /usr/local/bin tpl
-          bash -x index.sh ./public
-          cp -va ./dist ./public
+
+      - name: Generate index.html
+        id: generate
+        if: steps.prepare.outcome == 'success'
+        uses: jayanta525/github-pages-directory-listing@v4.0.0
+        with:
+          FOLDER: public
 
       - name: Deploy to GH pages
-        if: steps.merge.outcome == 'success'
+        if: steps.generate.outcome == 'success'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
