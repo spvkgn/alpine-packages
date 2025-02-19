@@ -7,7 +7,7 @@ pkgdesc="File archiver with a high compression ratio"
 url="https://7-zip.org/"
 arch="all"
 license="LGPL-2.0-only"
-makedepends="make build-base"
+makedepends="make build-base uasm"
 subpackages="$pkgname-doc"
 source="https://7-zip.org/a/7z$_pkgver-src.tar.xz
 	7-zip-flags.patch
@@ -24,26 +24,32 @@ provider_priority=100
 patch_args="-p1 --binary"
 
 build() {
+	case "$CARCH" in
+		x86_64) MAKE_OPTS="-f ../../cmpl_gcc_x64.mak MY_ASM=uasm" ;;
+		*)      MAKE_OPTS="-f ../../cmpl_gcc.mak" ;;
+	esac
 	# 7zz binary
 	cd CPP/7zip/Bundles/Alone2
 	mkdir -p b/g
-	# TODO: enable asm (requires jwasm or uasm)
 	# -D_GNU_SOURCE: broken sched.h defines
-	make -f ../../cmpl_gcc.mak \
-		CC="${CC:-cc} $CFLAGS $LDFLAGS -D_GNU_SOURCE" \
-		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS -D_GNU_SOURCE"
+	make $MAKE_OPTS \
+		CC="${CC:-cc} $CFLAGS $LDFLAGS" \
+		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS" \
+		CFLAGS_BASE_LIST="-c -D_7ZIP_AFFINITY_DISABLE=1 -DZ7_AFFINITY_DISABLE=1 -D_GNU_SOURCE=1"
 	# 7z.so library
 	cd ../Format7zF
 	mkdir -p b/g
-	make -f ../../cmpl_gcc.mak \
-		CC="${CC:-cc} $CFLAGS $LDFLAGS -D_GNU_SOURCE" \
-		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS -D_GNU_SOURCE"
+	make $MAKE_OPTS \
+		CC="${CC:-cc} $CFLAGS $LDFLAGS" \
+		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS" \
+		CFLAGS_BASE_LIST="-c -D_7ZIP_AFFINITY_DISABLE=1 -DZ7_AFFINITY_DISABLE=1 -D_GNU_SOURCE=1"
 	# SFX module
 	cd ../SFXCon
 	mkdir -p b/g
-	make -f ../../cmpl_gcc.mak \
-		CC="${CC:-cc} $CFLAGS $LDFLAGS -D_GNU_SOURCE" \
-		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS -D_GNU_SOURCE" \
+	make $MAKE_OPTS \
+		CC="${CC:-cc} $CFLAGS $LDFLAGS" \
+		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS" \
+		CFLAGS_BASE_LIST="-c -D_7ZIP_AFFINITY_DISABLE=1 -DZ7_AFFINITY_DISABLE=1 -D_GNU_SOURCE=1" \
 		COMPL_STATIC=1
 }
 

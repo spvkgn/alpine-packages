@@ -38,6 +38,12 @@ jobs:
             alpine-sdk bash ccache coreutils findutils gawk grep
           shell-name: alpine.sh
 
+      - name: Add extra build-deps to chroot
+        shell: alpine.sh --root {0}
+        run: |
+          apk add uasm --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing
+          # apk add uasm --allow-untrusted --repository https://spvkgn.github.io/alpine-packages/alpine/v3.18
+
       - name: Build packages inside chroot
         id: build
         env:
