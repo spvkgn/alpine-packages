@@ -2,8 +2,7 @@ name: build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+  # push:
 
 permissions:
   contents: write
@@ -17,7 +16,7 @@ jobs:
           arch: [x86_64]
           # arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, s390x]
           os: [ubuntu-latest]
-          branch: [v3.19]
+          branch: [v3.18]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
