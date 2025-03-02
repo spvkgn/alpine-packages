@@ -43,8 +43,7 @@ build() {
 	mkdir -p b/g
 	make -f ../../cmpl_gcc.mak \
 		CC="${CC:-cc} $CFLAGS $LDFLAGS -D_GNU_SOURCE" \
-		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS -D_GNU_SOURCE" \
-		COMPL_STATIC=1
+		CXX="${CXX:-c++} $CXXFLAGS $LDFLAGS -D_GNU_SOURCE"
 }
 
 check() {
@@ -78,5 +77,5 @@ sha512sums="
 1bacb622842e48b12e7d0557b2cae11aa2a51119308857bfd3479e11d13410b7bbde2fdee74a3645459cf2ca9a9a98c56bde82beee79ec59a46a2f406f7310f5  7-zip-flags.patch
 dd5c38548c348a850d6e82ed42ba2bdc4b9e363fa946e67158a1f042179d8155a8837c89d732f748ffd1ba948bf2b7cd456f6db50e122ebbd7ba9c8a1cd7b04b  7-zip-musl.patch
 307e2cb9f4d297562af549806aa1a75662aea7c66f54bb78b06f19c72dd2f34332614d18fc95967c90944df9325c976fa1d1daff4fccfda62a51360ca259d19f  0003-Disable-local-echo-display-when-in-input-passwords-C.patch
-5f7268da1d964236155963148bb6676099e24fc8e6668397862b167e35ee0ad087d0ea9838efbfa1e35846eeca096aa784b439ff8bdf0898075fa33ec29c9e02  0004-Use-system-locale-to-select-codepage-for-legacy-zip-.patch
+1bacb622842e48b12e7d0557b2cae11aa2a51119308857bfd3479e11d13410b7bbde2fdee74a3645459cf2ca9a9a98c56bde82beee79ec59a46a2f406f7310f5  0004-Use-system-locale-to-select-codepage-for-legacy-zip-.patch
 "
